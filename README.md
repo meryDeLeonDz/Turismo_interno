@@ -1,4 +1,4 @@
-# 🏠 Viviendas Vacacionales en Canarias
+# 🧳 Turismo interno
 
 Proyecto de análisis y visualización de datos sobre las **viviendas vacacionales registradas en Canarias**.
 
