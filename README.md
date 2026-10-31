@@ -1,6 +1,6 @@
 # 🧳 Turismo interno
 
-Proyecto de análisis y visualización de datos sobre las **viviendas vacacionales registradas en Canarias**.
+Proyecto de análisis y visualización de datos sobre el turismo interno entre provincias españolas.
 
 🎓 Este proyecto se desarrolla como parte de la **PEC2 de la asignatura Visualización de Datos del Máster Universitario en Ciencia de Datos de la UOC**.
 
@@ -17,28 +17,19 @@ comparando sus posibilidades para representar un mismo conjunto de datos.
 ---
 
 ## 📊 Fuentes de datos
+SEGITTUR.Sociedad Mercantil Estatal para la Gestión de la Innovación y las Tecnologías Turísticas.
 
-### 👥 Datos de población
+/TURISMO_INTERNO_PROV_CCAA_DL : Procedencia y destino de los turistas residentes que visitan una comunidad
+autónoma o provincia distinta a la suya en el territorio español.
 
-**Fuente:** Instituto Canario de Estadística (ISTAC)
-
-🔗 https://www3.gobiernodecanarias.org/istac/statistical-visualizer/visualizer/data.html?resourceId=6daf4220-c08f-431c-8383-a0a7daa87da7&indicatorSystem=C00067A&resourceType=indicatorInstance#visualization/table
-
----
-
-### 🏡 Viviendas vacacionales
-
-**Fuente:** Portal de Datos Abiertos del Gobierno de Canarias
-
-**Dataset:** *Establecimientos extrahoteleros de tipología vivienda vacacional inscritos en el Registro General Turístico de Canarias.*
+**Dataset:** *.*
 
 📁 Formato original: CSV
+🔗https://www.dataestur.es/API-SEGITTUR-2/TURISMO_INTERNO_PROV_CCAA_DL?desde%20%28a%C3%B1o%29=2024&desde%20%28mes%29=1&hasta%20%28a%C3%B1o%29=2025&hasta%20%28mes%29=12&CCAA%20origen=Todos&Provincia%20origen=Todos&CCAA%20destino=Todos&Provincia%20destino=Todos
 
-🔗 https://datos.canarias.es/catalogos/general/dataset/9f4355a2-d086-4384-ba72-d8c99aa2d544/resource/8ff8cc43-c00b-4513-8f42-a5b961c579e1/download/establecimientos-extrahoteleros-de-tipologia-vivienda-vacacional-inscritos-en-el-registro-genera.csv
 
-El conjunto de datos contiene el listado de establecimientos extrahoteleros de tipología **vivienda vacacional** inscritos en el Registro General Turístico de Canarias.
-
-> ℹ️ **Nota:** el código `_U` indica que se trata de un dato desconocido o que no consta.
+/TURISMO_INTERNO_PROV_CCAA_DL : Procedencia y destino de los turistas residentes que visitan una comunidad
+autónoma o provincia distinta a la suya en el territorio español.
 
 ---
 
@@ -48,25 +39,16 @@ Los datos originales han sido procesados para seleccionar y preparar las variabl
 
 Entre las variables utilizadas se encuentran:
 
-- 🏝️ Isla
-- 🏘️ Municipio
-- 🛏️ Número de plazas
-- 🏠 Características de los establecimientos
-- 👥 Población residente
+- CCAA_Destino: Comunidad Autónoma de destino.
+- CCAA_Origen: Comunidad Autónoma de origen.
+- PERNOCTACIONES
+- PROVINCIA_DESTINO
+- PROVINCIA_ORIGEN
+- TURISTAS
 
 ---
 
 # 📈 Gráficos publicados
-
-## 🔵 Tableau
-
-Dashboard interactivo para analizar la distribución de las viviendas vacacionales en Canarias.
-
-Permite explorar los datos territorialmente y consultar la información mediante diferentes elementos interactivos.
-
-🔗 https://public.tableau.com/app/profile/mar.a.jos.de.le.n.d.az/viz/ViviendasvacacionalesCanarias/Dashboard1?publish=yes
-
----
 
 ## 🟣 Flourish
 
