@@ -48,13 +48,19 @@ Entre las variables utilizadas se encuentran:
 
 🔗 https://app.flourish.studio/visualisation/30758261
 
-## 🟢 Datawrapper
-Visualización mediante Stacked Bar Chart (gráfico de barras apiladas).
+## 🟢 Observable (D3.js)
 
-El gráfico muestra la distribución de las viviendas vacacionales por isla, segmentadas según el número de plazas, permitiendo
-comparar tanto el volumen total como la composición de las distintas categorías.
+La visualización **Force-Directed Graph** se ha desarrollado en Observable con D3.js, tomando como referencia de diseño
+e interacción el proyecto: **Monahans — “Final Project: Force Directed Graph of Ingredients”**  
+https://old.observablehq.com/@monahans/final-project-force-directed-graph-of-ingredients
 
-🔗  https://www.datawrapper.de/_/ccWt5/
+A partir de esta referencia se ha adaptado la lógica al análisis del turismo interno entre provincias españolas:
+
+- nodos → provincias
+- color → comunidad autónoma
+- tamaño del nodo → turistas recibidos
+- enlaces → flujos turísticos entre provincias
+- grosor del enlace → número de turistas
 
 🧰 Herramientas utilizadas
 
