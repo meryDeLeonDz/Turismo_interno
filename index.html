@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Force-Directed Graph - Turismo interno en España 2025
+  </title>
+
+  <!-- D3.js -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+  <style>
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #222;
+      background: #ffffff;
+    }
+
+    .contenedor {
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 30px 24px 40px 24px;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: 30px;
+      line-height: 1.2;
+    }
+
+    .subtitulo {
+      max-width: 900px;
+      margin-top: 0;
+      margin-bottom: 22px;
+      color: #555;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .controles {
+      margin-bottom: 16px;
+    }
+
+    label {
+      margin-right: 8px;
+      font-weight: 600;
+    }
+
+    select {
+      padding: 7px 10px;
+      font-size: 14px;
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      background: white;
+    }
+
+    #grafico {
+      width: 100%;
+      background: #f4f5f7;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(255,255,255,0.96);
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      padding: 9px 11px;
+      font-size: 13px;
+      line-height: 1.45;
+      opacity: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .pie {
+      margin-top: 14px;
+      color: #666;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .pie p {
+      margin: 3px 0;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+<div class="contenedor">
+
+  <!-- =======================================================
+       TÍTULO
+       ======================================================= -->
+
+  <h1>
+    Principales flujos de turismo interno entre provincias españolas — 2025
+  </h1>
+
+  <p class="subtitulo">
+    El tamaño de los nodos representa el volumen de turistas
+    recibidos por provincia. El grosor de los enlaces representa
+    la intensidad de los desplazamientos entre provincias y el
+    color identifica la comunidad autónoma.
+  </p>
+
+
+  <!-- =======================================================
+       SELECTOR DE COMUNIDAD AUTÓNOMA
+       ======================================================= -->
+
+  <div class="controles">
+
+    <label for="selectorCCAA">
+      Comunidad autónoma:
+    </label>
+
+    <select id="selectorCCAA">
+      <option value="Todas">Todas</option>
+    </select>
+
+  </div>
+
+
+  <!-- =======================================================
+       GRÁFICO
+       ======================================================= -->
+
+  <div id="grafico"></div>
+
+
+  <!-- Tooltip HTML -->
+
+  <div
+    id="tooltip"
+    class="tooltip"
+  ></div>
+
+
+  <!-- =======================================================
+       FUENTES Y CRÉDITOS
+       ======================================================= -->
+
+  <div class="pie">
+
+    <p>
+      <strong>Nota metodológica:</strong>
+      los datos mensuales de 2025 se han agregado por provincia
+      de origen y provincia de destino.
+    </p>
+
+    <p>
+      <strong>Fuente:</strong>
+      Dataestur / SEGITTUR — Turismo interno de residentes en España.
+    </p>
+
+    <p>
+      <strong>Elaboración:</strong>
+      María José de León Díaz.
+      Visualización realizada con D3.js.
+    </p>
+
+    <p>
+      <strong>Referencia de diseño:</strong>
+      adaptación inspirada en
+      <em>Final Project: Force Directed Graph of Ingredients</em>,
+      de Monahans, publicado en Observable.
+    </p>
+
+  </div>
+
+</div>
+
+
+<script>
+
+// ============================================================
+// CONFIGURACIÓN GENERAL
+// ============================================================
+
+const width = 1100;
+const height = 800;
+
+
+// ============================================================
+// CARGAR DATOS
+// ============================================================
+
+Promise.all([
+
+  d3.csv(
+    "datos/TurismoInterno_2025.csv",
+    d3.autoType
+  ),
+
+  d3.csv(
+    "datos/TurismoInterno_2025_points.csv",
+    d3.autoType
+  )
+
+]).then(([linksRaw, pointsRaw]) => {
+
+
+  // ==========================================================
+  // PREPARAR ENLACES
+  // ==========================================================
+
+  const linksOriginales = linksRaw
+
+    // Eliminar registros agregados
+    .filter(d =>
+      d.PROVINCIA_ORIGEN !== "Total Nacional" &&
+      d.PROVINCIA_DESTINO !== "Total Nacional"
+    )
+
+    // Adaptar nombres al formato utilizado por D3
+    .map(d => ({
+
+      source: d.PROVINCIA_ORIGEN,
+
+      target: d.PROVINCIA_DESTINO,
+
+      value: d.TURISTAS,
+
+      pernoctaciones: d.PERNOCTACIONES,
+
+      ccaa_origen: d.CCAA_ORIGEN,
+
+      ccaa_destino: d.CCAA_DESTINO
+
+    }));
+
+
+  // ==========================================================
+  // PREPARAR NODOS
+  // ==========================================================
+
+  const pointsOriginales = pointsRaw.map(d => ({
+
+    id: d.id,
+
+    group: d.group,
+
+    size: d.size
+
+  }));
+
+
+  // ==========================================================
+  // COMUNIDADES AUTÓNOMAS
+  // ==========================================================
+
+  const categorias = Array.from(
+    new Set(
+      pointsOriginales.map(d => d.group)
+    )
+  ).sort();
+
+
+  // ==========================================================
+  // RELLENAR SELECTOR
+  // ==========================================================
+
+  const selector = d3.select("#selectorCCAA");
+
+  categorias.forEach(ccaa => {
+
+    selector
+      .append("option")
+      .attr("value", ccaa)
+      .text(ccaa);
+
+  });
+
+
+  // ==========================================================
+  // ESCALA DE COLOR
+  // ==========================================================
+
+  const color = d3.scaleOrdinal()
+    .domain(categorias)
+    .range(
+      d3.schemeTableau10.concat(
+        d3.schemeSet3
+      )
+    );
+
+
+  // ==========================================================
+  // ESCALA DE TAMAÑO DE NODOS
+  // ==========================================================
+
+  const sizeScale = d3.scaleSqrt()
+    .domain(
+      d3.extent(
+        pointsOriginales,
+        d => d.size
+      )
+    )
+    .range([4, 24]);
+
+
+  // ==========================================================
+  // ESCALA DE GROSOR DE ENLACES
+  // ==========================================================
+
+  const linkScale = d3.scaleSqrt()
+    .domain(
+      d3.extent(
+        linksOriginales,
+        d => d.value
+      )
+    )
+    .range([0.1, 2.5]);
+
+
+  // ==========================================================
+  // TOOLTIP
+  // ==========================================================
+
+  const tooltip = d3.select("#tooltip");
+
+
+  // ==========================================================
+  // FUNCIÓN PRINCIPAL
+  // ==========================================================
+
+  function dibujarGrafico(
+    ccaaSeleccionada = "Todas"
+  ) {
+
+
+    // Limpiar gráfico anterior
+
+    d3.select("#grafico")
+      .selectAll("*")
+      .remove();
+
+
+    // ========================================================
+    // FILTRAR ENLACES
+    // ========================================================
+
+    let linksFiltrados;
+
+
+    if (ccaaSeleccionada === "Todas") {
+
+      linksFiltrados =
+        linksOriginales.map(d => ({ ...d }));
+
+    }
+
+    else {
+
+      const provinciasCCAA = new Set(
+
+        pointsOriginales
+
+          .filter(
+            d => d.group === ccaaSeleccionada
+          )
+
+          .map(
+            d => d.id
+          )
+
+      );
+
+
+      linksFiltrados = linksOriginales
+
+        .filter(
+          d =>
+            provinciasCCAA.has(d.source) ||
+            provinciasCCAA.has(d.target)
+        )
+
+        .map(
+          d => ({ ...d })
+        );
+
+    }
+
+
+    // ========================================================
+    // DETERMINAR NODOS NECESARIOS
+    // ========================================================
+
+    let nodesFiltrados;
+
+
+    if (ccaaSeleccionada === "Todas") {
+
+      nodesFiltrados =
+        pointsOriginales.map(
+          d => ({ ...d })
+        );
+
+    }
+
+    else {
+
+      const ids = new Set(
+
+        linksFiltrados.flatMap(
+          d => [
+            d.source,
+            d.target
+          ]
+        )
+
+      );
+
+
+      nodesFiltrados = pointsOriginales
+
+        .filter(
+          d => ids.has(d.id)
+        )
+
+        .map(
+          d => ({ ...d })
+        );
+
+    }
+
+
+    // ========================================================
+    // CREAR SVG
+    // ========================================================
+
+    const svg = d3
+
+      .select("#grafico")
+
+      .append("svg")
+
+      .attr(
+        "viewBox",
+        [0, 0, width, height]
+      );
+
+
+    const container =
+      svg.append("g");
+
+
+    // ========================================================
+    // ENLACES
+    // ========================================================
+
+    const link = container
+
+      .append("g")
+
+      .attr(
+        "stroke",
+        "#788291"
+      )
+
+      .attr(
+        "stroke-opacity",
+        0.03
+      )
+
+      .selectAll("line")
+
+      .data(linksFiltrados)
+
+      .join("line")
+
+      .attr(
+        "stroke-width",
+        d => linkScale(d.value)
+      );
+
+
+    // ========================================================
+    // NODOS
+    // ========================================================
+
+    const node = container
+
+      .append("g")
+
+      .selectAll("circle")
+
+      .data(nodesFiltrados)
+
+      .join("circle")
+
+      .attr(
+        "r",
+        d => sizeScale(d.size)
+      )
+
+      .attr(
+        "fill",
+        d => color(d.group)
+      )
+
+      .attr(
+        "stroke",
+        "#ffffff"
+      )
+
+      .attr(
+        "stroke-width",
+        1.5
+      );
+
+
+    // ========================================================
+    // 10 PROVINCIAS PRINCIPALES
+    // ========================================================
+
+    const topNombres = new Set(
+
+      [...nodesFiltrados]
+
+        .sort(
+          (a, b) =>
+            d3.descending(
+              a.size,
+              b.size
+            )
+        )
+
+        .slice(0, 10)
+
+        .map(
+          d => d.id
+        )
+
+    );
+
+
+    // ========================================================
+    // ETIQUETAS
+    // ========================================================
+
+    const labels = container
+
+      .append("g")
+
+      .selectAll("text")
+
+      .data(
+        nodesFiltrados.filter(
+          d => topNombres.has(d.id)
+        )
+      )
+
+      .join("text")
+
+      .text(
+        d => d.id
+      )
+
+      .attr(
+        "font-size",
+        12
+      )
+
+      .attr(
+        "font-weight",
+        600
+      )
+
+      .attr(
+        "fill",
+        "#333333"
+      )
+
+      .attr(
+        "pointer-events",
+        "none"
+      );
+
+
+    // ========================================================
+    // TOOLTIP DE NODOS
+    // ========================================================
+
+    node
+
+      .on(
+        "mousemove",
+        function(event, d) {
+
+          tooltip
+            .style(
+              "opacity",
+              1
+            )
+
+            .html(
+              `<strong>${d.id}</strong><br>
+               ${d.group}<br>
+               Turistas recibidos:
+               ${d3.format(",")(d.size)}`
+            )
+
+            .style(
+              "left",
+              `${event.pageX + 12}px`
+            )
+
+            .style(
+              "top",
+              `${event.pageY + 12}px`
+            );
+
+
+          // Resaltar nodo
+
+          node.attr(
+            "opacity",
+            n =>
+              n.id === d.id
+                ? 1
+                : 0.12
+          );
+
+
+          // Resaltar conexiones
+
+          link.attr(
+            "stroke-opacity",
+            l =>
+              l.source.id === d.id ||
+              l.target.id === d.id
+                ? 0.7
+                : 0.01
+          );
+
+        }
+      )
+
+
+      .on(
+        "mouseout",
+        function() {
+
+          tooltip.style(
+            "opacity",
+            0
+          );
+
+
+          node.attr(
+            "opacity",
+            1
+          );
+
+
+          link.attr(
+            "stroke-opacity",
+            0.03
+          );
+
+        }
+      );
+
+
+    // ========================================================
+    // SIMULACIÓN
+    // ========================================================
+
+    const simulation =
+      d3.forceSimulation(
+        nodesFiltrados
+      )
+
+
+      // Conexiones
+
+      .force(
+
+        "link",
+
+        d3.forceLink(
+          linksFiltrados
+        )
+
+          .id(
+            d => d.id
+          )
+
+          .distance(180)
+
+          .strength(0.15)
+
+      )
+
+
+      // Repulsión
+
+      .force(
+
+        "charge",
+
+        d3.forceManyBody()
+          .strength(-600)
+
+      )
+
+
+      // Centrado
+
+      .force(
+
+        "center",
+
+        d3.forceCenter(
+          width / 2,
+          height / 2
+        )
+
+      )
+
+
+      // Colisión
+
+      .force(
+
+        "collision",
+
+        d3.forceCollide()
+
+          .radius(
+            d =>
+              sizeScale(d.size) + 12
+          )
+
+      );
+
+
+    // ========================================================
+    // ACTUALIZAR POSICIONES
+    // ========================================================
+
+    simulation.on(
+      "tick",
+      () => {
+
+
+        link
+
+          .attr(
+            "x1",
+            d => d.source.x
+          )
+
+          .attr(
+            "y1",
+            d => d.source.y
+          )
+
+          .attr(
+            "x2",
+            d => d.target.x
+          )
+
+          .attr(
+            "y2",
+            d => d.target.y
+          );
+
+
+        node
+
+          .attr(
+            "cx",
+            d => d.x
+          )
+
+          .attr(
+            "cy",
+            d => d.y
+          );
+
+
+        labels
+
+          .attr(
+            "x",
+            d =>
+              d.x +
+              sizeScale(d.size) +
+              5
+          )
+
+          .attr(
+            "y",
+            d => d.y + 4
+          );
+
+      }
+    );
+
+
+    // ========================================================
+    // ZOOM
+    // ========================================================
+
+    svg.call(
+
+      d3.zoom()
+
+        .scaleExtent(
+          [0.5, 5]
+        )
+
+        .on(
+          "zoom",
+          event => {
+
+            container.attr(
+              "transform",
+              event.transform
+            );
+
+          }
+        )
+
+    );
+
+  }
+
+
+  // ==========================================================
+  // CAMBIO DE COMUNIDAD AUTÓNOMA
+  // ==========================================================
+
+  selector.on(
+    "change",
+    function() {
+
+      dibujarGrafico(
+        this.value
+      );
+
+    }
+  );
+
+
+  // ==========================================================
+  // GRÁFICO INICIAL
+  // ==========================================================
+
+  dibujarGrafico("Todas");
+
+})
+.catch(error => {
+
+  console.error(
+    "Error al cargar los datos:",
+    error
+  );
+
+});
+</script>
+
+</body>
+
+</html>
